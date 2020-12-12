@@ -13,25 +13,45 @@ import youtube_dl as yd
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
+vid_inform = {
+    "uploader": '',
+    "title": '',
+    "thumbnails": [],
+    "webpage_url": '',
+    "formats": []
+}
+vid_format = {
+    "format_id": 0,
+    "ext": '',
+    "width": 0,
+    "height": 0,
+    "format": '',
+}
+
 class Window(Qt.QWidget):
+    videoOptions = []
+    audioOptions = []
+
     def __init__(self):
         super().__init__()
         self.initUI()
 
     def initUI(self):
         self.searchArea()
-        self.videoQuality()
+        self.videoQuality(["240p", "360p"])
+        self.audioQuality(["12", "23"])
 
         hbox = Qt.QHBoxLayout()
         hbox.addStretch(1)
         hbox.addLayout(self.sbox)
         hbox.addWidget(self.video_cb)
+        hbox.addWidget(self.audio_cb)
         hbox.addStretch(1)
 
         self.setLayout(hbox)
 
         self.setWindowTitle("Test Window")
-        self.resize(1200, 720)
+        self.resize(800, 600)
         self.setWindowToCenter()
         self.show()
 
@@ -55,22 +75,37 @@ class Window(Qt.QWidget):
         self.sbox.addWidget(self.search_btn)
         self.sbox.addStretch(8)
 
-    def videoQuality(self):
+    def videoQuality(self, vd_qual):
         self.video_cb = Qt.QComboBox(self)
-        self.video_cb.addItem("chk", 100)
+        self.video_cb.addItem("bestvideo", 100)
+        for qual in vd_qual:
+            self.video_cb.addItem(qual, int(qual[0:-1]))
 
-    def audioQuality(self):
+    def audioQuality(self, ad_qual):
         self.audio_cb = Qt.QComboBox(self)
-        self.audio_cb.addItem("chk", 100)
+        self.audio_cb.addItem("bestaudio", 100)
+        for qual in ad_qual:
+            self.audio_cb.addItem(qual, int(qual[0:-1]))
 
 class Downloader:
     def __init__(self):
-        self.options = {}
+        self.options = {
+            'format': 'best/best',
+        }
+
+    def getQualityInfo(self, url):
+        vd_infos = []
+        ad_infos = []
 
     def downloadVid(self, url):
         self.ydl = yd.YoutubeDL(self.options)
-        for inform, value in self.ydl.extract_info(url, False).items():
-            print(inform + ": " + str(value))
+        inform = self.ydl.extract_info(url, False)["formats"]
+        f = open("result.txt", 'w')
+        for a in inform:
+            for b, c in a.items():
+                print(b + ": " + str(c), file=f)
+            print("-----------", file=f)
+        f.close()
 
 
 # def main():
@@ -97,3 +132,6 @@ class Downloader:
 if __name__ == "__main__":
     yt_downloader = Downloader()
     yt_downloader.downloadVid("https://www.youtube.com/watch?v=CS4f3jawFxY")
+    app = Qt.QApplication(sys.argv)
+    ex = Window()
+    sys.exit(app.exec_())
