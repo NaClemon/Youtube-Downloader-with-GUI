@@ -38,17 +38,25 @@ class Window(Qt.QWidget):
 
     def initUI(self):
         self.searchArea()
-        self.videoQuality(["240p", "360p"])
-        self.audioQuality(["12", "23"])
+        self.tb = Qt.QTextBrowser()
+
+        video_ck = Qt.QCheckBox("Best Video", self)
+        audio_ck = Qt.QCheckBox("Best Audio", self)
 
         hbox = Qt.QHBoxLayout()
         hbox.addStretch(1)
         hbox.addLayout(self.sbox)
-        hbox.addWidget(self.video_cb)
-        hbox.addWidget(self.audio_cb)
+        hbox.addWidget(video_ck)
+        hbox.addWidget(audio_ck)
         hbox.addStretch(1)
 
-        self.setLayout(hbox)
+        vbox = Qt.QVBoxLayout()
+        vbox.addStretch(1)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self.tb)
+        vbox.addStretch(1)
+
+        self.setLayout(vbox)
 
         self.setWindowTitle("Test Window")
         self.resize(800, 600)
@@ -66,7 +74,7 @@ class Window(Qt.QWidget):
         self.search_line = Qt.QLineEdit(self)
 
         self.search_btn = Qt.QPushButton("Search", self)
-        self.search_btn.setCheckable(True)
+        self.search_btn.pressed.connect(lambda : self.setVidInform(self.search_line.text()))
 
         self.sbox = Qt.QHBoxLayout()
         self.sbox.addStretch(1)
@@ -74,6 +82,17 @@ class Window(Qt.QWidget):
         self.sbox.addWidget(self.search_line)
         self.sbox.addWidget(self.search_btn)
         self.sbox.addStretch(8)
+
+    def setVidInform(self, url):
+        self.tb.clear()
+        try:
+            yt_downloader = Downloader()
+            informs = yt_downloader.downloadVid(url)
+            for key, val in informs.items():
+                self.tb.append(key + ": " + str(val))
+                self.tb.append("---------------------------------")
+        except:
+            self.tb.append("There is no video.")
 
     def videoQuality(self, vd_qual):
         self.video_cb = Qt.QComboBox(self)
@@ -99,13 +118,13 @@ class Downloader:
 
     def downloadVid(self, url):
         self.ydl = yd.YoutubeDL(self.options)
-        inform = self.ydl.extract_info(url, False)["formats"]
-        f = open("result.txt", 'w')
-        for a in inform:
-            for b, c in a.items():
-                print(b + ": " + str(c), file=f)
-            print("-----------", file=f)
+        inform = self.ydl.extract_info(url, False)
+        f = open("result.txt", 'w', encoding='UTF8')
+        for a, b in inform.items():
+            print(a + ": " + str(b), file=f)
+            print("----------------------", file=f)
         f.close()
+        return inform
 
 
 # def main():
@@ -130,8 +149,6 @@ class Downloader:
 #     print(response)
 
 if __name__ == "__main__":
-    yt_downloader = Downloader()
-    yt_downloader.downloadVid("https://www.youtube.com/watch?v=CS4f3jawFxY")
     app = Qt.QApplication(sys.argv)
     ex = Window()
     sys.exit(app.exec_())
