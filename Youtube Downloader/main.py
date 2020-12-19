@@ -8,25 +8,20 @@ import googleapiclient.discovery
 import googleapiclient.errors
 
 import PyQt5.QtWidgets as Qt
+import PyQt5.QtGui as Qg
+
+import urllib.request
 
 import youtube_dl as yd
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
-vid_inform = {
-    "uploader": '',
-    "title": '',
-    "thumbnails": [],
-    "webpage_url": '',
-    "formats": []
-}
-vid_format = {
-    "format_id": 0,
-    "ext": '',
-    "width": 0,
-    "height": 0,
-    "format": '',
-}
+vid_inform = [
+    "uploader",
+    "title",
+    "thumbnails",
+    "webpage_url",
+]
 
 class Window(Qt.QWidget):
     videoOptions = []
@@ -50,10 +45,13 @@ class Window(Qt.QWidget):
         hbox.addWidget(audio_ck)
         hbox.addStretch(1)
 
+        self.lb = Qt.QLabel()
+
         vbox = Qt.QVBoxLayout()
         vbox.addStretch(1)
         vbox.addLayout(hbox)
         vbox.addWidget(self.tb)
+        vbox.addWidget(self.lb)
         vbox.addStretch(1)
 
         self.setLayout(vbox)
@@ -89,8 +87,16 @@ class Window(Qt.QWidget):
             yt_downloader = Downloader()
             informs = yt_downloader.downloadVid(url)
             for key, val in informs.items():
-                self.tb.append(key + ": " + str(val))
-                self.tb.append("---------------------------------")
+                if key in vid_inform:
+                    if key == 'thumbnails':
+                        imageFromWeb = urllib.request.urlopen(val[0]['url']).read()
+                        self.qpix = Qg.QPixmap()
+                        self.qpix.loadFromData(imageFromWeb)
+                        self.lb.setPixmap(self.qpix)
+                        self.tb.append("<img src='" + val[0]['url'] + "'/>")
+
+                    self.tb.append(key + ": " + str(val))
+                    self.tb.append("---------------------------------")
         except:
             self.tb.append("There is no video.")
 
