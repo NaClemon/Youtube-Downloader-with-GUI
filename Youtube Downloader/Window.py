@@ -23,14 +23,7 @@ class Window(Qt.QWidget):
         self.searchArea()
         # 스크롤 에리어
         self.scrollBox = Qt.QScrollArea()
-        self.vidList = Qt.QVBoxLayout()
-            # hbox
-                # 이미지
-                # vbox
-                    # 업로더
-                    # 제목
-                    # 다운로드 버튼
-        self.scrollBox.setLayout(self.vidList)
+        self.scrollBox.setFixedHeight(400)
 
         vbox = Qt.QVBoxLayout()
         vbox.addStretch(1)
@@ -71,13 +64,17 @@ class Window(Qt.QWidget):
         self.sbox.addStretch(1)
 
     def setVidInform(self, url):
+        # Video List
+        vidList = Qt.QVBoxLayout()
+        # Video Inform
         vid_box = Qt.QHBoxLayout()
         vid_box.addStretch(1)
+        # Video Detail
+        detail_box = Qt.QVBoxLayout()
+        detail_box.setContentsMargins(35, 0, 0, 0)
         try:
             yt_downloader = Downloader.Downloader()
             informs = yt_downloader.downloadVid(url)
-            inform_box = Qt.QVBoxLayout()
-            inform_box.addStretch(1)
             for key, val in informs.items():
                 if key in vid_inform:
                     if key == 'thumbnails':
@@ -87,16 +84,22 @@ class Window(Qt.QWidget):
                         qpix.loadFromData(imageFromWeb)
                         lb.setPixmap(qpix)
                         vid_box.addWidget(lb)
+                    elif key == 'webpage_url':
+                        lb = Qt.QLabel(key + ": <a href='" + str(val) + "'>check</a>")
+                        lb.setOpenExternalLinks(True)
+                        detail_box.addWidget(lb)
                     else:
                         lb = Qt.QLabel(key + ": " + str(val))
-                        inform_box.addWidget(lb)
+                        detail_box.addWidget(lb)
         except:
             lb = Qt.QLabel("There is no video.")
-            inform_box.addWidget(lb)
-        inform_box.addStretch(1)
-        vid_box.addLayout(inform_box)
-        vid_box.addStretch(2)
-        self.vidList.addLayout(vid_box)
+            detail_box.addWidget(lb)
+        vid_box.addLayout(detail_box)
+        vid_box.addStretch(1)
+        vidList.addLayout(vid_box)
+        widget = Qt.QWidget()
+        widget.setLayout(vidList)
+        self.scrollBox.setWidget(widget)
 
     def videoQuality(self, vd_qual):
         self.video_cb = Qt.QComboBox(self)
