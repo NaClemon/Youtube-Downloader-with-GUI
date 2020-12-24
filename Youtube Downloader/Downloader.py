@@ -12,6 +12,7 @@ class Downloader:
 
     def downloadVid(self, url):
         self.ydl = yd.YoutubeDL(self.options)
+        print("check")
         inform = self.ydl.extract_info(url, False)
         f = open("result.txt", 'w', encoding='UTF8')
         for a, b in inform.items():
