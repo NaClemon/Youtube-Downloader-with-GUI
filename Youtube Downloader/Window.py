@@ -1,5 +1,6 @@
 import PyQt5.QtWidgets as Qt
 import PyQt5.QtGui as Qg
+import PyQt5.QtCore as Qc
 import urllib.request
 import Downloader
 
@@ -19,17 +20,25 @@ class Window(Qt.QWidget):
 
     def __init__(self):
         super().__init__()
+        # Youtube Downloader
         self.yt_downloader = Downloader.Downloader()
+        # Api Setting
+        self.api_box = Qt.QHBoxLayout()
+        self.api_key = Qt.QLineEdit()
+        self.api_btn = Qt.QPushButton("적용")
+        # Directory to download
+        self.dir_box = Qt.QHBoxLayout()
+        self.dir_path = Qt.QLineEdit()
+        self.dir_button = Qt.QPushButton("...")
         # Search
-        self.search_label = Qt.QLabel("검색어: ", self)
+        self.search_label = Qt.QLabel("검색어: ")
         self.search_line = Qt.QLineEdit(self)
-        self.search_btn = Qt.QPushButton("Search", self)
-        self.video_ck = Qt.QCheckBox("Best Video", self)
-        self.audio_ck = Qt.QCheckBox("Best Audio", self)
+        self.search_btn = Qt.QPushButton("Search")
         self.search_box = Qt.QHBoxLayout()
         # Download Option
-        # self.video_cb = Qt.QComboBox()
-        # self.audio_cb = Qt.QComboBox()
+        self.opt_lb = Qt.QLabel("검색 방식: ")
+        self.opt_url = Qt.QRadioButton("주소")
+        self.opt_word = Qt.QRadioButton("검색어")
         # Result
         self.scrollBox = Qt.QScrollArea()
         self.download_btns = []
@@ -37,6 +46,8 @@ class Window(Qt.QWidget):
 
     def initUI(self):
         self.scrollBox.setFixedHeight(400)
+        self.apiArea()
+        self.dirArea()
         self.searchArea()
         self.makeLayout()
         self.createWindow()
@@ -56,20 +67,45 @@ class Window(Qt.QWidget):
     def makeLayout(self):
         vbox = Qt.QVBoxLayout()
         vbox.addStretch(1)
+        vbox.addLayout(self.api_box)
+        vbox.addLayout(self.dir_box)
         vbox.addLayout(self.search_box)
         vbox.addWidget(self.scrollBox)
         vbox.addStretch(1)
         self.setLayout(vbox)
 
+    def apiArea(self):
+        self.api_btn.clicked.connect(lambda : self.applyApi(self.api_key.text()))
+        self.api_box.addWidget(self.api_key)
+        self.api_box.addWidget(self.api_btn)
+
+    def applyApi(self, key):
+        if not self.yt_downloader.setBuildEnv(key):
+            msgbox = Qt.QMessageBox()
+            msgbox.critical(self, 'Api Error', 'This is unavailable api key')
+
+    def dirArea(self):
+        self.dir_button.clicked.connect(self.openDir)
+        dir_lb = Qt.QLabel("Download Path: ")
+        self.dir_box.addWidget(dir_lb)
+        self.dir_box.addWidget(self.dir_path)
+        self.dir_box.addWidget(self.dir_button)
+
+    def openDir(self):
+        path = Qt.QFileDialog.getExistingDirectory()
+        self.dir_path.setText(path)
+
     def searchArea(self):
         self.search_btn.pressed.connect(lambda : self.setResultArea(self.search_line.text()))
+        self.opt_url.setChecked(True)
 
         self.search_box.addStretch(1)
         self.search_box.addWidget(self.search_label)
         self.search_box.addWidget(self.search_line)
         self.search_box.addWidget(self.search_btn)
-        self.search_box.addWidget(self.video_ck)
-        self.search_box.addWidget(self.audio_ck)
+        self.search_box.addWidget(self.opt_lb)
+        self.search_box.addWidget(self.opt_url)
+        self.search_box.addWidget(self.opt_word)
         self.search_box.addStretch(1)
 
     def setResultArea(self, url):
@@ -94,9 +130,9 @@ class Window(Qt.QWidget):
                     lb.setPixmap(thumbnail)
                     vid_box.addWidget(lb)
                 elif vid_key == 'webpage_url':
-                    lb.setText(vid_key + ": <a href='" + str(vid_val) + "'>check</a>")
+                    lb.setText("<a href='" + str(vid_val) + "'>Go To Webpage</a>")
                     lb.setOpenExternalLinks(True)
-                    download_btn.pressed.connect(lambda : self.yt_downloader.downloadVid(str(vid_val)))
+                    download_btn.pressed.connect(lambda : self.yt_downloader.downloadVid(str(vid_val), True, self.dir_path.text()))
                     self.download_btns.append(download_btn)
                     detail_box.addWidget(lb)
                 else:
@@ -114,6 +150,7 @@ class Window(Qt.QWidget):
         scroll_widget = Qt.QWidget()
         scroll_widget.setLayout(list_box)
         self.scrollBox.setWidget(scroll_widget)
+        self.scrollBox.setAlignment(Qc.Qt.AlignHCenter)
 
     def getVidsList(self, url):
         vid_list = []
@@ -129,13 +166,3 @@ class Window(Qt.QWidget):
             print("There is Error in " + url, file=log)
         log.close()
         return vid_list
-
-    def videoQuality(self, vd_qual):
-        self.video_cb.addItem("bestvideo", 100)
-        for qual in vd_qual:
-            self.video_cb.addItem(qual, int(qual[0:-1]))
-
-    def audioQuality(self, ad_qual):
-        self.audio_cb.addItem("bestaudio", 100)
-        for qual in ad_qual:
-            self.audio_cb.addItem(qual, int(qual[0:-1]))

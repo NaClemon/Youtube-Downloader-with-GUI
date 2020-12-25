@@ -6,9 +6,6 @@ import sys
 
 import Window
 
-import googleapiclient.discovery
-import googleapiclient.errors
-
 import PyQt5.QtWidgets as Qt
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
