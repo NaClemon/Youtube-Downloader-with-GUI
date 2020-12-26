@@ -38,7 +38,7 @@ class Downloader:
         return []
 
     def downloadVid(self, url, is_download=False, path=''):
-        self.options['outtmpl'] = path + '/YoutubeVideos/%(title)s.%(ext)s'
+        self.options['outtmpl'] = path + '/%(title)s.%(ext)s'
         self.ydl = yd.YoutubeDL(self.options)
         inform = self.ydl.extract_info(url, is_download)
         f = open("result.txt", 'w', encoding='UTF8')

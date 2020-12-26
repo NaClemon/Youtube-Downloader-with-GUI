@@ -23,9 +23,11 @@ class Window(Qt.QWidget):
         # Youtube Downloader
         self.yt_downloader = Downloader.Downloader()
         # Api Setting
+        self.api_lb = Qt.QLabel("Api key: ")
         self.api_box = Qt.QHBoxLayout()
         self.api_key = Qt.QLineEdit()
         self.api_btn = Qt.QPushButton("적용")
+        self.is_valid_api = False
         # Directory to download
         self.dir_box = Qt.QHBoxLayout()
         self.dir_path = Qt.QLineEdit()
@@ -33,12 +35,13 @@ class Window(Qt.QWidget):
         # Search
         self.search_label = Qt.QLabel("검색어: ")
         self.search_line = Qt.QLineEdit(self)
-        self.search_btn = Qt.QPushButton("Search")
+        self.search_btn = Qt.QPushButton("검색")
         self.search_box = Qt.QHBoxLayout()
         # Download Option
         self.opt_lb = Qt.QLabel("검색 방식: ")
         self.opt_url = Qt.QRadioButton("주소")
         self.opt_word = Qt.QRadioButton("검색어")
+        self.is_url = True
         # Result
         self.scrollBox = Qt.QScrollArea()
         self.download_btns = []
@@ -76,28 +79,34 @@ class Window(Qt.QWidget):
 
     def apiArea(self):
         self.api_btn.clicked.connect(lambda : self.applyApi(self.api_key.text()))
+        self.api_box.addWidget(self.api_lb)
         self.api_box.addWidget(self.api_key)
         self.api_box.addWidget(self.api_btn)
 
     def applyApi(self, key):
         if not self.yt_downloader.setBuildEnv(key):
             msgbox = Qt.QMessageBox()
-            msgbox.critical(self, 'Api Error', 'This is unavailable api key')
+            msgbox.critical(self, 'Api Error', '유효하지 않은 api key입니다.')
+            self.is_valid_api = False
+        else:
+            self.is_valid_api = True
 
     def dirArea(self):
         self.dir_button.clicked.connect(self.openDir)
-        dir_lb = Qt.QLabel("Download Path: ")
+        dir_lb = Qt.QLabel("저장 경로: ")
         self.dir_box.addWidget(dir_lb)
         self.dir_box.addWidget(self.dir_path)
         self.dir_box.addWidget(self.dir_button)
 
     def openDir(self):
         path = Qt.QFileDialog.getExistingDirectory()
-        self.dir_path.setText(path)
+        self.dir_path.setText(path + '/YoutubeVideos')
 
     def searchArea(self):
         self.search_btn.pressed.connect(lambda : self.setResultArea(self.search_line.text()))
         self.opt_url.setChecked(True)
+        self.opt_url.clicked.connect(self.radioButtonClicked)
+        self.opt_word.clicked.connect(self.radioButtonClicked)
 
         self.search_box.addStretch(1)
         self.search_box.addWidget(self.search_label)
@@ -107,6 +116,17 @@ class Window(Qt.QWidget):
         self.search_box.addWidget(self.opt_url)
         self.search_box.addWidget(self.opt_word)
         self.search_box.addStretch(1)
+
+    def radioButtonClicked(self):
+        if self.opt_url.isChecked():
+            self.is_url = True
+        elif self.opt_word.isChecked():
+            if not self.is_valid_api:
+                msgbox = Qt.QMessageBox()
+                msgbox.critical(self, 'Api Error', '이 옵션을 선택할 수 없습니다.\nApi key를 입력해 주세요.')
+                self.opt_url.setChecked(True)
+            else:
+                self.is_url = False
 
     def setResultArea(self, url):
         vid_list = self.getVidsList(url)
