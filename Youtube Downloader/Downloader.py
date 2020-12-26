@@ -20,12 +20,11 @@ class Downloader:
         }
         self.api_service_name = "youtube"
         self.api_version = "v3"
-        self.api_key = ""
 
     def setBuildEnv(self, api_key):
         try:
             self.youtube = googleapiclient.discovery.build(
-                self.api_service_name, self.api_version, developerKey=self.api_key)
+                self.api_service_name, self.api_version, developerKey=api_key)
             return True
         except:
             return False
@@ -34,16 +33,25 @@ class Downloader:
         vd_infos = []
         ad_infos = []
 
-    def searchVid(self, search_word):
-        return []
+    def getVidList(self, search_word):
+        vid_list = []
+        self.request_param['q'] = search_word
+        additional_url = 'https://www.youtube.com/watch?v='
+        request = self.youtube.search().list(
+            part=self.request_param['part'],
+            maxResults=self.request_param['maxResults'],
+            q=self.request_param['q'],
+            type=self.request_param['type']
+        )
+        vids = request.execute()
+        for vid_inform in vids['items']:
+            vid_list.append(additional_url + vid_inform['id']['videoId'])
+        return vid_list
 
     def downloadVid(self, url, is_download=False, path=''):
+        if path == '':
+            path += './YoutubeVideos'
         self.options['outtmpl'] = path + '/%(title)s.%(ext)s'
         self.ydl = yd.YoutubeDL(self.options)
         inform = self.ydl.extract_info(url, is_download)
-        f = open("result.txt", 'w', encoding='UTF8')
-        for a, b in inform.items():
-            print(a + ": " + str(b), file=f)
-            print("----------------------", file=f)
-        f.close()
         return inform

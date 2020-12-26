@@ -84,11 +84,12 @@ class Window(Qt.QWidget):
         self.api_box.addWidget(self.api_btn)
 
     def applyApi(self, key):
+        msgbox = Qt.QMessageBox()
         if not self.yt_downloader.setBuildEnv(key):
-            msgbox = Qt.QMessageBox()
             msgbox.critical(self, 'Api Error', '유효하지 않은 api key입니다.')
             self.is_valid_api = False
         else:
+            msgbox.information(self, 'Api Error', 'Api를 적용하였습니다.')
             self.is_valid_api = True
 
     def dirArea(self):
@@ -128,8 +129,15 @@ class Window(Qt.QWidget):
             else:
                 self.is_url = False
 
-    def setResultArea(self, url):
-        vid_list = self.getVidsList(url)
+    def setResultArea(self, search_word):
+        vids_url = []
+        if not self.is_url:
+            vids_url = self.yt_downloader.getVidList(search_word)
+        else:
+            vids_url.append(search_word)
+
+        vid_list = self.getVidsList(vids_url)
+
         # List Area
         list_box = Qt.QVBoxLayout()
 
@@ -140,7 +148,6 @@ class Window(Qt.QWidget):
             # Video's Detail Area
             detail_box = Qt.QVBoxLayout()
             detail_box.setContentsMargins(35, 0, 0, 0)
-            download_btn = Qt.QPushButton("Download", self)
             for vid_key, vid_val in vids.items():
                 lb = Qt.QLabel()
                 if vid_key == 'thumbnails':
@@ -152,6 +159,7 @@ class Window(Qt.QWidget):
                 elif vid_key == 'webpage_url':
                     lb.setText("<a href='" + str(vid_val) + "'>Go To Webpage</a>")
                     lb.setOpenExternalLinks(True)
+                    download_btn = Qt.QPushButton("Download", self)
                     download_btn.pressed.connect(lambda : self.yt_downloader.downloadVid(str(vid_val), True, self.dir_path.text()))
                     self.download_btns.append(download_btn)
                     detail_box.addWidget(lb)
@@ -172,17 +180,20 @@ class Window(Qt.QWidget):
         self.scrollBox.setWidget(scroll_widget)
         self.scrollBox.setAlignment(Qc.Qt.AlignHCenter)
 
-    def getVidsList(self, url):
+    def getVidsList(self, vids_url):
         vid_list = []
-        log = open("Error_Logs.txt", 'w', encoding='UTF8')
+        log = open("Logs.txt", 'w', encoding='UTF8')
         try:
-            vid = {}
-            vid_informs = self.yt_downloader.downloadVid(url)
-            for key, val in vid_informs.items():
-                if key in vid_inform:
-                    vid[key] = val
-            vid_list.append(vid)
+            for url in vids_url:
+                vid = {}
+                vid_informs = self.yt_downloader.downloadVid(url)
+                for key, val in vid_informs.items():
+                    if key in vid_inform:
+                        vid[key] = val
+                vid_list.append(vid)
+                print(vid, file=log)
         except:
+            print("-------------------------------------------")
             print("There is Error in " + url, file=log)
         log.close()
         return vid_list
