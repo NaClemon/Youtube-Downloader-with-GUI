@@ -1,6 +1,7 @@
 import PyQt5.QtWidgets as Qt
 import PyQt5.QtGui as Qg
 import PyQt5.QtCore as Qc
+import configparser
 import urllib.request
 import Downloader
 
@@ -20,6 +21,9 @@ class Window(Qt.QWidget):
 
     def __init__(self):
         super().__init__()
+        # Ini File Setting
+        self.config = configparser.ConfigParser()
+        self.config['setting'] = {}
         # Youtube Downloader
         self.yt_downloader = Downloader.Downloader()
         # Api Setting
@@ -45,15 +49,28 @@ class Window(Qt.QWidget):
         # Result
         self.scrollBox = Qt.QScrollArea()
         self.download_btns = []
+        self.download_urls = []
         self.initUI()
 
     def initUI(self):
+        self.initSetting()
         self.scrollBox.setFixedHeight(400)
         self.apiArea()
         self.dirArea()
         self.searchArea()
         self.makeLayout()
         self.createWindow()
+
+    def initSetting(self):
+        self.config.read('setting.ini')
+        if 'api_key' in self.config['setting']:
+            if self.config['setting']['api_key'] != '':
+                msgbox = Qt.QMessageBox()
+                msgbox.information(self, 'Api Success', 'Api를 적용하였습니다.')
+                self.api_key.setText(self.config['setting']['api_key'])
+                self.is_valid_api = True
+        else:
+            self.is_valid_api = False
 
     def createWindow(self):
         self.setWindowTitle(self.window_title)
@@ -78,19 +95,33 @@ class Window(Qt.QWidget):
         self.setLayout(vbox)
 
     def apiArea(self):
-        self.api_btn.clicked.connect(lambda : self.applyApi(self.api_key.text()))
+        self.api_btn.clicked.connect(lambda: self.applyApi(self.api_key.text()))
+        init_api_btn = Qt.QPushButton('초기화')
+        init_api_btn.clicked.connect(self.initKey)
         self.api_box.addWidget(self.api_lb)
         self.api_box.addWidget(self.api_key)
         self.api_box.addWidget(self.api_btn)
+        self.api_box.addWidget(init_api_btn)
 
     def applyApi(self, key):
         msgbox = Qt.QMessageBox()
         if not self.yt_downloader.setBuildEnv(key):
             msgbox.critical(self, 'Api Error', '유효하지 않은 api key입니다.')
-            self.is_valid_api = False
         else:
-            msgbox.information(self, 'Api Error', 'Api를 적용하였습니다.')
+            msgbox.information(self, 'Api Success', 'Api를 적용하였습니다.')
+            self.config['setting']['api_key'] = key
+            with open('./setting.ini', 'w') as setting:
+                self.config.write(setting)
             self.is_valid_api = True
+
+    def initKey(self):
+        self.config['setting']['api_key'] = ''
+        self.api_key.setText('')
+        with open('./setting.ini', 'w') as setting:
+            self.config.write(setting)
+        msgbox = Qt.QMessageBox()
+        msgbox.information(self, 'Api Initialize', 'Api 정보를 초기화하였습니다.')
+        self.is_valid_api = False
 
     def dirArea(self):
         self.dir_button.clicked.connect(self.openDir)
@@ -104,7 +135,7 @@ class Window(Qt.QWidget):
         self.dir_path.setText(path + '/YoutubeVideos')
 
     def searchArea(self):
-        self.search_btn.pressed.connect(lambda : self.setResultArea(self.search_line.text()))
+        self.search_btn.pressed.connect(lambda: self.setResultArea(self.search_line.text()))
         self.opt_url.setChecked(True)
         self.opt_url.clicked.connect(self.radioButtonClicked)
         self.opt_word.clicked.connect(self.radioButtonClicked)
@@ -130,6 +161,7 @@ class Window(Qt.QWidget):
                 self.is_url = False
 
     def setResultArea(self, search_word):
+        self.download_btns = []
         vids_url = []
         if not self.is_url:
             vids_url = self.yt_downloader.getVidList(search_word)
@@ -137,6 +169,8 @@ class Window(Qt.QWidget):
             vids_url.append(search_word)
 
         vid_list = self.getVidsList(vids_url)
+        self.download_urls = vids_url
+        url_index = 0
 
         # List Area
         list_box = Qt.QVBoxLayout()
@@ -159,15 +193,15 @@ class Window(Qt.QWidget):
                 elif vid_key == 'webpage_url':
                     lb.setText("<a href='" + str(vid_val) + "'>Go To Webpage</a>")
                     lb.setOpenExternalLinks(True)
-                    download_btn = Qt.QPushButton("Download", self)
-                    download_btn.pressed.connect(lambda : self.yt_downloader.downloadVid(str(vid_val), True, self.dir_path.text()))
-                    self.download_btns.append(download_btn)
+                    self.download_btns.append(Qt.QPushButton("Download", self))
+                    self.download_btns[-1].pressed.connect(lambda: self.yt_downloader.downloadVid(self.download_urls[url_index], True, self.dir_path.text()))
+                    url_index += 1
                     detail_box.addWidget(lb)
                 else:
                     lb.setText(vid_key + ": " + str(vid_val))
                     detail_box.addWidget(lb)
             vid_box.addLayout(detail_box)
-            vid_box.addWidget(download_btn)
+            vid_box.addWidget(self.download_btns[-1])
             vid_box.addStretch(1)
             list_box.addLayout(vid_box)
 
