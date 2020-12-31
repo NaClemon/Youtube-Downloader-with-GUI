@@ -4,6 +4,7 @@ import PyQt5.QtCore as Qc
 import configparser
 import urllib.request
 import Downloader
+from functools import partial
 
 vid_inform = [
     "uploader",
@@ -65,6 +66,7 @@ class Window(Qt.QWidget):
         self.config.read('setting.ini')
         if 'api_key' in self.config['setting']:
             if self.config['setting']['api_key'] != '':
+                self.yt_downloader.setBuildEnv(self.config['setting']['api_key'])
                 msgbox = Qt.QMessageBox()
                 msgbox.information(self, 'Api Success', 'Api를 적용하였습니다.')
                 self.api_key.setText(self.config['setting']['api_key'])
@@ -194,7 +196,7 @@ class Window(Qt.QWidget):
                     lb.setText("<a href='" + str(vid_val) + "'>Go To Webpage</a>")
                     lb.setOpenExternalLinks(True)
                     self.download_btns.append(Qt.QPushButton("Download", self))
-                    self.download_btns[-1].pressed.connect(lambda: self.yt_downloader.downloadVid(self.download_urls[url_index], True, self.dir_path.text()))
+                    self.download_btns[-1].clicked.connect(partial(self.yt_downloader.downloadVid, self.download_urls[url_index], True, self.dir_path.text()))
                     url_index += 1
                     detail_box.addWidget(lb)
                 else:
