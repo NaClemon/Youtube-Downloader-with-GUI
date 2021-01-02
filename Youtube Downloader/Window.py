@@ -4,6 +4,7 @@ import PyQt5.QtCore as Qc
 import configparser
 import urllib.request
 import Downloader
+import MenuWindow as Mw
 from functools import partial
 
 vid_inform = [
@@ -22,6 +23,9 @@ class Window(Qt.QWidget):
 
     def __init__(self):
         super().__init__()
+        # Menu Window
+        self.help_window = Mw.HelpWindow()
+        self.setting_window = Mw.MenuWindow()
         # Ini File Setting
         self.config = configparser.ConfigParser()
         self.config['setting'] = {}
@@ -52,6 +56,11 @@ class Window(Qt.QWidget):
         self.download_btns = []
         self.download_urls = []
         self.initUI()
+
+    def keyPressEvent(self, event):
+        super().keyPressEvent(event)
+        if event.key() == Qc.Qt.Key_F1:
+            self.help_window.show()
 
     def initUI(self):
         self.initSetting()
@@ -202,7 +211,10 @@ class Window(Qt.QWidget):
                 else:
                     lb.setText(vid_key + ": " + str(vid_val))
                     detail_box.addWidget(lb)
-            vid_box.addLayout(detail_box)
+            detail_widget = Qt.QWidget()
+            detail_widget.setLayout(detail_box)
+            detail_widget.setFixedWidth(450)
+            vid_box.addWidget(detail_widget)
             vid_box.addWidget(self.download_btns[-1])
             vid_box.addStretch(1)
             list_box.addLayout(vid_box)
